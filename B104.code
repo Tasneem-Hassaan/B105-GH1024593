@@ -1,0 +1,189 @@
+
+library(readr)
+
+Data2 <- read_csv("C:/Users/Tasneem tab/Desktop/Datasets/ObesityLevels/Data2.csv")
+View(Data2)
+
+# Check for missing values
+sum(is.na(Data2))
+
+# Summary statistics for all variables
+summary(Data2)
+
+# Check the structure of the dataset
+str(Data2)
+
+# Rounding the columns to remove decimal numbers
+# Identify numeric columns
+numeric_columns <- sapply(Data2, is.numeric)
+
+# Set height column to FALSE so it's not rounded
+numeric_columns["Height"] <- FALSE
+
+# Apply rounding to all numeric columns except Height
+Data2[numeric_columns] <- lapply(Data2[numeric_columns], round, 0)
+
+# Check the changes
+head(Data2)
+
+# Create age groups
+Data2$AgeGroup <- cut(Data2$Age, 
+                      breaks = c(14, 18, 24, 28, 32, 36, 40, 45, 50, 55, 60),
+                      labels = c("14-18", "18-24", "24-28", "28-32", "32-36", 
+                                 "36-40", "40-45", "45-50", "50-55", "55-60"),
+                      right = FALSE)
+
+# View the first few rows to check the new AgeGroup column
+head(Data2$AgeGroup)
+
+
+
+
+# Load ggplot2 for visualization
+library(ggplot2)
+?ggplot2
+
+# Install and load RColorBrewer for the coloe pallet 
+install.packages("RColorBrewer")
+library(RColorBrewer)
+
+
+
+# Creating a bar chart for Age 
+ggplot(Data2, aes(x=AgeGroup, fill=AgeGroup)) + 
+  geom_bar() +
+  scale_fill_brewer(palette="YlGnBu", direction=-1) +
+  labs(title="Age Group Distribution", x="Age Group", y="Count") +
+  theme_minimal()
+
+
+
+# Create a frequency table for Gender
+gender_data <- as.data.frame(table(Data2$Gender))
+
+# Pie chart using ggplot2
+ggplot(gender_data, aes(x="", y=Freq, fill=Var1)) + 
+  geom_bar(stat="identity", width=1) +
+  coord_polar(theta="y") +  # This transforms the bar chart into a pie chart
+  scale_fill_brewer(palette="YlGnBu",) +  # Applying the palette
+  labs(title="Gender Distribution", fill="Gender") +
+  theme_void()  # Removes unnecessary background elements
+
+
+
+# Faceted histogram with a color palette for Obesity Level
+ggplot(Data2, aes(x=FAF, fill=NObeyesdad)) + 
+  geom_histogram(binwidth=1, color="black") +  # Remove fixed fill and map fill to NObeyesdad
+  facet_wrap(~ NObeyesdad) +  # Facet by obesity level
+  labs(title="Physical Activity Frequency by Obesity Level", 
+       x="Physical Activity Frequency (FAF)", y="Count") +
+  theme_minimal() +
+  scale_fill_brewer(palette="YlGnBu", direction=-1)  
+
+
+
+       
+# Create a frequency table for family_history_with_overweight
+family_history_data <- as.data.frame(table(Data2$family_history_with_overweight))
+       
+
+       
+# Create the pie chart for the family history 
+ggplot(family_history_data, aes(x="", y=Freq, fill=Var1)) + 
+  geom_bar(stat="identity", width=1) +
+  coord_polar(theta="y") +  # Transform the bar chart into a pie chart
+  labs(title="Family History with Overweight", fill="Family History") +
+  theme_void() +  # Removes unnecessary background elements
+  scale_fill_brewer(palette="YlGnBu")  # Apply the YlGnBu palette
+       
+
+
+
+# Boxplot for Weight by CAEC
+Plot(Weight, by=CAEC, data=Data2)
+                        
+                        
+ggplot(clean_data, aes(x=FAF, y=Weight, color=NObeyesdad)) +
+  geom_point () +
+  facet_grid(CH20 ~ NCP) +
+  labs (title="obesity Analysis by Water Intake, Meal Frequency, and Physical Activity",
+        X="Physical Activity",
+        y="Weight") +
+  theme_minimal()+
+  scale_color_brewer(palette = "YlGnBu")
+
+
+                        
+# List of categorical columns
+cat_cols <- c('Gender', 'CALC', 'SCC', 'SMOKE', 'family_history_with_overweight', 'CAEC', 'MTRANS', 'FAVC')
+                        
+# Split the columns into two groups
+cat_cols_1 <- cat_cols[1:4] # First four columns
+cat_cols_2 <- cat_cols[5:8] # Last four columns
+
+# Function to generate plots
+generate_plots <- function(cols) {
+plot_list <- list()
+  
+for (col in cols) {
+  p <- ggplot(Data2, aes_string(x = 'NObeyesdad', fill =col)) +
+    geom_bar (position = "dodge") +
+    scale_fill_brewer(palette = "YlGnBu") +
+    labs (title = paste('NObeyesdad VS', col)) +
+    theme_minimal() +
+    theme (axis.text.x = element_text(angle = 45, hjust =1))
+  
+  
+  plot_list[[col]] <- p
+}
+    
+  return(plot_list)
+}
+
+
+# Generate plots for both groups
+plot_list_1 <- generate_plots(cat_cols_1)
+plot_list_2 <- generate_plots(cat_cols_2)
+    
+# Arrange the first set of plots in a grid layout (2 columns, 2 rows for 4 plots)
+grid.arrange(grobs = plot_list_1, ncol = 2, nrow = 2)
+    
+# Arrange the second set of plots in a grid layout (2 columns, 2 rows for 4 plots)
+grid.arrange(grobs = plot_list_2, ncol = 2, nrow = 2)
+                        
+                        
+
+
+
+
+# Check normality for smokers
+shapiro.test(Data2$Weight[data$SMOKE == "yes"])
+
+# Check normality for non-smokers
+shapiro.test(Data2$Weight[data$SMOKE == "no"])
+
+
+# Install and load car package if needed
+install.packages("car")
+library(car)
+
+# Levene's Test for Homogeneity of Variance
+leveneTest(Weight ~ SMOKE, data = Data2)
+
+# Perform t-test to compare weight between smokers and non-smokers
+t_test_result <- t.test(Weight ~ SMOKE, data = Data2)
+
+# View the results
+print(t_test_result)
+
+
+
+# Chi-Square test to see if family history impacts obesity levels
+chisq.test(table(Data2$family_history_with_overweight, Data2$NObeyesdad))
+
+# ANOVA to test if physical activity frequency differs across obesity levels
+anova_result_faf <- aov(FAF ~ NObeyesdad, data = Data2)
+summary (anova_result_faf)
+
+
+
